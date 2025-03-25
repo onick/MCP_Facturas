@@ -1,0 +1,206 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "message",
+        "operation": "get",
+        "to": "{{$json.body.phone}}",
+        "text": "{{$node[\"Claude AI\"].json.response}}"
+      },
+      "name": "WhatsApp: Enviar Mensaje",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [1020, 380]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "webhook",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Webhook: Recibir Mensaje",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 380]
+    },
+    {
+      "parameters": {
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "headerAuth",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "{{$node[\"Credentials\"].json.anthropic_api_key}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            }
+          ]
+        },
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "{\n  \"model\": \"claude-3-opus-20240229\",\n  \"max_tokens\": 1024,\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Eres un asistente virtual para un concesionario de vehículos. Tu tarea es ayudar a los clientes a encontrar información sobre vehículos disponibles y generar facturas proforma. Utilizas herramientas MCP para buscar vehículos, obtener detalles específicos y generar facturas en PDF. Siempre ofreces un servicio cortés y profesional. Cuando un cliente pregunte por un vehículo, usa search-vehicles para encontrar opciones. Cuando quieran detalles específicos, usa get-vehicle-details. Si solicitan una factura, pide todos los datos necesarios y usa generate-invoice.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"{{$json.body.message}}\"\n    }\n  ]\n}"
+      },
+      "name": "Claude AI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [640, 380]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "anthropic_api_key",
+              "value": "tu_clave_api_de_anthropic"
+            }
+          ]
+        }
+      },
+      "name": "Credentials",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [440, 380]
+    },
+    {
+      "parameters": {
+        "content": "{\n  \"status\": \"success\",\n  \"message\": \"Webhook recibido correctamente\"\n}",
+        "responseCode": 200,
+        "options": {}
+      },
+      "name": "Respuesta HTTP",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [440, 520]
+    },
+    {
+      "parameters": {
+        "filePath": "{{$node[\"Claude AI\"].json.attachments[0].path}}",
+        "binaryPropertyName": "data",
+        "options": {}
+      },
+      "name": "Leer PDF",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [820, 520],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "{{$json.body.type}}",
+              "operation": "contains",
+              "value2": "document"
+            }
+          ]
+        }
+      },
+      "name": "Si es PDF",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [820, 380]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "message",
+        "operation": "send",
+        "to": "{{$json.body.phone}}",
+        "document": "={{$node[\"Leer PDF\"].binary.data}}"
+      },
+      "name": "WhatsApp: Enviar PDF",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [1020, 520]
+    }
+  ],
+  "connections": {
+    "Webhook: Recibir Mensaje": {
+      "main": [
+        [
+          {
+            "node": "Credentials",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Respuesta HTTP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Credentials": {
+      "main": [
+        [
+          {
+            "node": "Claude AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude AI": {
+      "main": [
+        [
+          {
+            "node": "Si es PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Si es PDF": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp: Enviar Mensaje",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Leer PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer PDF": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp: Enviar PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": {},
+  "versionId": "1",
+  "triggerCount": 0,
+  "usedCredentials": {
+    "whatsAppOAuth2Api": 1,
+    "httpHeaderAuth": 1
+  }

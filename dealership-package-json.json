@@ -1,0 +1,29 @@
+{
+  "name": "dealership-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP Server para asistente de concesionario de vehículos",
+  "main": "build/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node build/index.js",
+    "dev": "tsc && node build/index.js"
+  },
+  "keywords": [
+    "mcp",
+    "ai",
+    "dealer",
+    "vehicles"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.7.0",
+    "pdf-lib": "^1.17.1",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.2"
+  }
+}

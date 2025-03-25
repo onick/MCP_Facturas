@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "dealership": {
+      "command": "node",
+      "args": [
+        "/ruta/absoluta/a/dealership-mcp-server/build/index.js"
+      ]
+    }
+  }
+}
